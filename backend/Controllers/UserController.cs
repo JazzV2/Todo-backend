@@ -72,8 +72,7 @@ namespace backend.Controllers
         {
             var identity = HttpContext.User.Identity as ClaimsIdentity;
 
-            if (identity is null)
-                return BadRequest("Something wrong, please log in again");
+            bool isUpdated = false;
 
             var username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
             var user = await _context.Users.FirstOrDefaultAsync(user => user.Username == username);
@@ -84,20 +83,39 @@ namespace backend.Controllers
             {
                 if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, user.HashPassword))
                     return BadRequest("This is the same password");
-                else if ()
+                else if (dto.NewPassword != String.Empty)
+                {
                     user.HashPassword = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+                    isUpdated = true;
+                }
             }
 
             if (dto.NewUsername != user.Username && dto.NewUsername != String.Empty)
             {
                 if (otherUser is null)
+                {
                     user.Username = dto.NewUsername;
+                    isUpdated = true;
+                }
                 else
                     return BadRequest("This username already exists");
             }
 
+            if (dto.NewEmail != user.Email && dto.NewEmail != String.Empty)
+            {
+                user.Email = dto.NewEmail;
+                isUpdated = true;
+            }
 
-                
+            if (isUpdated)
+                user.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            if (isUpdated)
+                return Ok("User data was updated successfully");
+            else
+                return BadRequest("Nothing has been changed");
         }
 
         private string CreateToken(User user)
