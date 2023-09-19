@@ -55,9 +55,70 @@ namespace backend.Controllers
             return Ok(convertedTasks);
         }
 
-        /*[HttpPatch]
+        [HttpPatch]
         [Route("Edit{id}")]
         [Authorize]
-        public async Task<IActionResult> Edit([FromRoute] string id)*/
+        public async Task<IActionResult> Edit([FromRoute] string id, [FromBody] ToDoEditDto dto)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            string username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
+            bool isUpdated = false;
+
+            var task = await _context.ToDos.FirstOrDefaultAsync(todo => todo.Id == id);
+
+            if (task is null)
+                return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to edit this task");
+
+            if (dto.NewTitle != task.Title && dto.NewTitle != String.Empty)
+            {
+                isUpdated = true;
+                task.Title = dto.NewTitle;
+            }
+
+            if (dto.NewDescription != task.Description && dto.NewDescription != String.Empty)
+            {
+                isUpdated = true;
+                task.Description = dto.NewDescription;
+            }
+
+            if (dto.NewStatus != task.IsDone)
+            {
+                isUpdated = true;
+                task.IsDone = dto.NewStatus;
+            }
+
+            if (isUpdated)
+            {
+                task.UpdatedAt = DateTime.Now;
+                await _context.SaveChangesAsync();
+            }
+               
+            return Ok(200);
+        }
+
+        [HttpDelete]
+        [Route("Delete{id}")]
+        [Authorize]
+        public async Task<IActionResult> Delete([FromRoute] string id)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            string username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+            var task = await _context.ToDos.FirstOrDefaultAsync(toDo => toDo.Id == id);
+
+            if (task is null)
+                return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to delete this task");
+
+            _context.ToDos.Remove(task);
+            await _context.SaveChangesAsync();
+
+            return Ok(200);
+        }
     }
 }

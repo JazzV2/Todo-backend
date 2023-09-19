@@ -66,7 +66,7 @@ namespace backend.Controllers
         }
 
         [HttpPatch]
-        [Route("PatchUser")]
+        [Route("Patch")]
         [Authorize]
         public async Task<IActionResult> PatchUser([FromBody] UserPatchDto dto)
         {
@@ -116,6 +116,33 @@ namespace backend.Controllers
                 return Ok("User data was updated successfully");
             else
                 return BadRequest("Nothing has been changed");
+        }
+
+        [HttpDelete]
+        [Route("Delete")]
+        [Authorize]
+        public async Task<IActionResult> Delete([FromBody] UserDeleteDto dto)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            string username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var user = await _context.Users.Include(u => u.ToDos).FirstOrDefaultAsync(u => u.Username == username);
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.HashPassword))
+                return Unauthorized("Bad password");
+
+            var tasks = user.ToDos.ToList();
+
+            if (!tasks.Any())
+            {
+                tasks.ForEach(task => _context.ToDos.Remove(task));
+                await _context.SaveChangesAsync();
+            }
+
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            return Ok("User was deleted successfully");
         }
 
         private string CreateToken(User user)
