@@ -9,5 +9,9 @@ namespace backend.Core.Models
         public string Title { get; set; }
         public string Description { get; set; }
         public bool IsDone { get; set; } = false;
+
+        // Relations
+        public string Username { get; set; }
+        public User User { get; set; }
     }
 }
