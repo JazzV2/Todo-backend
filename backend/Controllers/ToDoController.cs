@@ -66,11 +66,11 @@ namespace backend.Controllers
 
             var task = await _context.ToDos.FirstOrDefaultAsync(todo => todo.Id == id);
 
-            if (task is null)
-                return NotFound("Task not found");
-
             if (task.Username != username)
                 return Unauthorized("You have no permission to edit this task");
+
+            if (task is null)
+                return NotFound("Task not found");
 
             if (dto.NewTitle != task.Title && dto.NewTitle != String.Empty)
             {
@@ -88,6 +88,12 @@ namespace backend.Controllers
             {
                 isUpdated = true;
                 task.IsDone = dto.NewStatus;
+            }
+
+            if (dto.IsImportant != task.IsImportant)
+            {
+                isUpdated = true;
+                task.IsImportant = dto.IsImportant;
             }
 
             if (isUpdated)
@@ -109,11 +115,11 @@ namespace backend.Controllers
 
             var task = await _context.ToDos.FirstOrDefaultAsync(toDo => toDo.Id == id);
 
-            if (task is null)
-                return NotFound("Task not found");
-
             if (task.Username != username)
                 return Unauthorized("You have no permission to delete this task");
+
+            if (task is null)
+                return NotFound("Task not found");
 
             _context.ToDos.Remove(task);
             await _context.SaveChangesAsync();
