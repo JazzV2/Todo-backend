@@ -66,11 +66,11 @@ namespace backend.Controllers
 
             var task = await _context.ToDos.FirstOrDefaultAsync(todo => todo.Id == id);
 
-            if (task.Username != username)
-                return Unauthorized("You have no permission to edit this task");
-
             if (task is null)
                 return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to edit this task");
 
             if (dto.NewTitle != task.Title && dto.NewTitle != String.Empty)
             {
@@ -84,18 +84,6 @@ namespace backend.Controllers
                 task.Description = dto.NewDescription;
             }
 
-            if (dto.NewStatus != task.IsDone)
-            {
-                isUpdated = true;
-                task.IsDone = dto.NewStatus;
-            }
-
-            if (dto.IsImportant != task.IsImportant)
-            {
-                isUpdated = true;
-                task.IsImportant = dto.IsImportant;
-            }
-
             if (isUpdated)
             {
                 task.UpdatedAt = DateTime.Now;
@@ -103,6 +91,52 @@ namespace backend.Controllers
             }
                
             return Ok(200);
+        }
+
+        [HttpPatch]
+        [Route("MakeDone{id}")]
+        [Authorize]
+        public async Task<IActionResult> MakeDone([FromRoute] string id)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            string username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+            var task = await _context.ToDos.FirstOrDefaultAsync(toDo => toDo.Id == id);
+
+            if (task is null)
+                return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to delete this task");
+
+            task.IsDone = !task.IsDone;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Task is done");
+        }
+
+        [HttpPatch]
+        [Route("MakeImportant{id}")]
+        [Authorize]
+        public async Task<IActionResult> MakeImportant([FromRoute] string id)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            string username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+            var task = await _context.ToDos.FirstOrDefaultAsync(toDo => toDo.Id == id);
+
+            if (task is null)
+                return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to delete this task");
+
+            task.IsImportant = !task.IsImportant;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Task is done");
         }
 
         [HttpDelete]
@@ -115,11 +149,11 @@ namespace backend.Controllers
 
             var task = await _context.ToDos.FirstOrDefaultAsync(toDo => toDo.Id == id);
 
-            if (task.Username != username)
-                return Unauthorized("You have no permission to delete this task");
-
             if (task is null)
                 return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to delete this task");
 
             _context.ToDos.Remove(task);
             await _context.SaveChangesAsync();
