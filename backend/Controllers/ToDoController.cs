@@ -84,12 +84,6 @@ namespace backend.Controllers
                 task.Description = dto.NewDescription;
             }
 
-            if (dto.NewStatus != task.IsDone)
-            {
-                isUpdated = true;
-                task.IsDone = dto.NewStatus;
-            }
-
             if (isUpdated)
             {
                 task.UpdatedAt = DateTime.Now;
@@ -97,6 +91,52 @@ namespace backend.Controllers
             }
                
             return Ok(200);
+        }
+
+        [HttpPatch]
+        [Route("MakeDone{id}")]
+        [Authorize]
+        public async Task<IActionResult> MakeDone([FromRoute] string id)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            string username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+            var task = await _context.ToDos.FirstOrDefaultAsync(toDo => toDo.Id == id);
+
+            if (task is null)
+                return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to delete this task");
+
+            task.IsDone = !task.IsDone;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Task is done");
+        }
+
+        [HttpPatch]
+        [Route("MakeImportant{id}")]
+        [Authorize]
+        public async Task<IActionResult> MakeImportant([FromRoute] string id)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            string username = identity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+            var task = await _context.ToDos.FirstOrDefaultAsync(toDo => toDo.Id == id);
+
+            if (task is null)
+                return NotFound("Task not found");
+
+            if (task.Username != username)
+                return Unauthorized("You have no permission to delete this task");
+
+            task.IsImportant = !task.IsImportant;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Task is done");
         }
 
         [HttpDelete]
